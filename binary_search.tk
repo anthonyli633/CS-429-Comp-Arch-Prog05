@@ -1,0 +1,107 @@
+.code
+	in r1, r0              ; r1 = n
+
+	ld r10, :arr
+	mov r11, r10
+
+	mov r2, 0               ; i = 0
+	ld r20, :read_loop
+	ld r21, :read_done
+	ld r22, :read_body
+
+:read_loop
+	mov r3, r1
+	subi r3, 1
+	brgt r21, r2, r3        ; if i > n-1 -> done
+	br r22
+
+:read_body
+	in r4, r0
+	mov (r11)(0), r4
+	addi r11, 8
+	addi r2, 1
+	br r20
+
+:read_done
+	in r5, r0               ; x
+
+	; low=0, high=n-1
+	mov r6, 0               ; low
+	mov r7, r1
+	subi r7, 1              ; high
+
+	ld r27, :bs_loop
+	ld r28, :bs_notfound
+	ld r29, :bs_found
+
+:bs_loop
+	brgt r28, r6, r7
+	mov r8, r6
+	add r8, r8, r7
+	mov r9, 2
+	div r8, r8, r9
+	mov r12, 8
+	mul r13, r8, r12
+	ld r14, :arr
+	add r14, r14, r13
+	mov r15, (r14)(0)
+	xor r16, r15, r5
+	ld r17, :not_equal
+	brnz r17, r16
+	br r29
+
+:not_equal
+	ld r18, :val_gt
+	brgt r18, r15, r5
+	mov r6, r8
+	addi r6, 1
+	br r27
+
+:val_gt
+	mov r7, r8
+	subi r7, 1
+	br r27
+
+:bs_found
+	mov r30, 3
+	mov r19, 102            ; f
+	out r30, r19
+	mov r19, 111            ; o
+	out r30, r19
+	mov r19, 117            ; u
+	out r30, r19
+	mov r19, 110            ; n
+	out r30, r19
+	mov r19, 100            ; d
+	out r30, r19
+	mov r19, 10             ; \n
+	out r30, r19
+	halt
+
+:bs_notfound
+	mov r30, 3
+	mov r19, 110            ; n
+	out r30, r19
+	mov r19, 111            ; o
+	out r30, r19
+	mov r19, 116            ; t
+	out r30, r19
+	mov r19, 32             ; space
+	out r30, r19
+	mov r19, 102            ; f
+	out r30, r19
+	mov r19, 111            ; o
+	out r30, r19
+	mov r19, 117            ; u
+	out r30, r19
+	mov r19, 110            ; n
+	out r30, r19
+	mov r19, 100            ; d
+	out r30, r19
+	mov r19, 10             ; \n
+	out r30, r19
+	halt
+
+.data
+:arr
+	0
