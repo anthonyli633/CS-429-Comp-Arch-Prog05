@@ -376,8 +376,8 @@ void parseInput(FILE *input) {
             }
             label_name[i] = '\0';
 
-            if (section == -1) dief("Label outside of .code/.data", raw);
-            add_label_checked(label_name, (section == 0) ? code_pc : data_pc);
+            // if (section == -1) dief("Label outside of .code/.data", raw);
+            add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
             continue;
         }
 

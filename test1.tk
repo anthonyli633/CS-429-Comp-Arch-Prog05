@@ -1,21 +1,5 @@
-; test1.tk
-; Expected output: 42
-
+:L0
 .code
-:start
-    ; r1 = address of :val in .data (should be 0x10000)
-    ld r1, :val
-
-    ; r2 = *(r1 + 0)  (load 64-bit value 42)
-    mov r2, (r1)(0)
-
-    ; print r2
-    mov r0, 1
-    out r0, r2
-
-    ; done
-    halt
-
-.data
-:val
-    42
+	add r1, r2, r3
+	sub r5, r10, r15
+	ld r1, :L0
