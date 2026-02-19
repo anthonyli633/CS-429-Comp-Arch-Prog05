@@ -1,37 +1,30 @@
 .code
-	; read n
 	in r1, r0
 	subi r1, 2
 
-	; setup
-	mov r2, 0		; a = 0
-	mov r3, 1		; b = 1
-	mov r4, 0		; i = 0
-	mov r30, 1		; output port = 1
+	mov r2, 0
+	mov r3, 1
+	mov r4, 0
+	mov r30, 1
 
-	; load
 	ld r10, :end
 	ld r11, :loop
 	ld r12, :body
 	ld r13, :output
 
 :loop
-	; if i >= n → end
 	brgt r13, r4, r1
 	br r12
 
 :body
-	; next = a + b
 	add r5, r2, r3
 	mov r2, r3
 	mov r3, r5
 
-	; i++
 	addi r4, 1
 	br r11
 
 :output
-	; print
 	out r30, r2
 	br r10
 
