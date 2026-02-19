@@ -1,0 +1,8 @@
+.code
+	add r1, r2, r3
+:L0
+:L1
+:L2
+:L3
+.data
+	1

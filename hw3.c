@@ -336,7 +336,8 @@ static void ld(FILE *intermediate, const char *rd, uint64_t L) {
     fprintf(intermediate, "\taddi %s, %llu\n", rd, (unsigned long long)(L & 0xFULL));
 }
 
-// ===== Pass 1: collect labels and compute addresses in Stage 3 layout =====
+static int pL = 0;
+static char* unparsedLabels[MAX_LABELS];
 void parseInput(FILE *input) {
     char raw[MAX_LINE];
 
@@ -358,10 +359,22 @@ void parseInput(FILE *input) {
 
         if (strncmp(ptr, ".code", 5) == 0 && (ptr[5] == '\0' || isspace((unsigned char)ptr[5]))) {
             section = 0;
+            if (pL > 0) {
+                for (int i = 0; i < pL; i++) {
+                    add_label_checked(unparsedLabels[i], code_pc);
+                }
+                pL = 0;
+            }
             continue;
         }
         if (strncmp(ptr, ".data", 5) == 0 && (ptr[5] == '\0' || isspace((unsigned char)ptr[5]))) {
             section = 1;
+            if (pL > 0) {
+                for (int i = 0; i < pL; i++) {
+                    add_label_checked(unparsedLabels[i], data_pc);
+                }
+                pL = 0;
+            }
             continue;
         }
 
@@ -376,8 +389,8 @@ void parseInput(FILE *input) {
             }
             label_name[i] = '\0';
 
-            // if (section == -1) dief("Label outside of .code/.data", raw);
-            add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
+            unparsedLabels[pL++] = my_strdup(label_name);
+            // else add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
             continue;
         }
 
