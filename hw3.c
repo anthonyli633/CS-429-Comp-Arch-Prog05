@@ -336,8 +336,7 @@ static void ld(FILE *intermediate, const char *rd, uint64_t L) {
     fprintf(intermediate, "\taddi %s, %llu\n", rd, (unsigned long long)(L & 0xFULL));
 }
 
-static int pL = 0;
-static char* unparsedLabels[MAX_LABELS];
+// ===== Pass 1: collect labels and compute addresses in Stage 3 layout =====
 void parseInput(FILE *input) {
     char raw[MAX_LINE];
 
@@ -359,22 +358,10 @@ void parseInput(FILE *input) {
 
         if (strncmp(ptr, ".code", 5) == 0 && (ptr[5] == '\0' || isspace((unsigned char)ptr[5]))) {
             section = 0;
-            if (pL > 0) {
-                for (int i = 0; i < pL; i++) {
-                    add_label_checked(unparsedLabels[i], code_pc);
-                }
-                pL = 0;
-            }
             continue;
         }
         if (strncmp(ptr, ".data", 5) == 0 && (ptr[5] == '\0' || isspace((unsigned char)ptr[5]))) {
             section = 1;
-            if (pL > 0) {
-                for (int i = 0; i < pL; i++) {
-                    add_label_checked(unparsedLabels[i], data_pc);
-                }
-                pL = 0;
-            }
             continue;
         }
 
@@ -389,8 +376,8 @@ void parseInput(FILE *input) {
             }
             label_name[i] = '\0';
 
-            unparsedLabels[pL++] = my_strdup(label_name);
-            // else add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
+            // if (section == -1) dief("Label outside of .code/.data", raw);
+            add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
             continue;
         }
 
@@ -890,11 +877,6 @@ static void emit_section(FILE *intermediate, FILE *output, int want_section) {
     }
 }
 
-static void clearFile(const char *path) {
-    FILE *f = fopen(path, "w");
-    if (f) fclose(f);
-}
-
 int main(int argc, char *argv[]) {
     if (argc != 3) {
         fprintf(stderr, "Usage: %s input.tk output.tko\n", argv[0]);
@@ -907,7 +889,6 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // internal intermediate (not user-visible)
     FILE *intermediate = tmpfile();
     if (!intermediate) {
         fprintf(stderr, "Could not create temporary intermediate\n");
@@ -915,20 +896,16 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // pass 1: collect labels/addresses
-    label_count = 0;              // IMPORTANT if you ever re-run in same process
+    label_count = 0;
     parseInput(input);
 
-    // pass 1b: macro-expand + rewrite brr :label => brr imm
     rewind(input);
     generateIntermediate(input, intermediate);
     fclose(input);
 
-    // compute code/data sizes in bytes
     uint64_t code_sz = 0, data_sz = 0;
     compute_segment_sizes(intermediate, &code_sz, &data_sz);
 
-    // open output
     FILE *output = fopen(argv[2], "wb");
     if (!output) {
         fprintf(stderr, "Could not open output file\n");
@@ -936,15 +913,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    // write header: 5 x uint64_t (in order)
-    // file_type, code_begin, code_size, data_begin, data_size
     write_u64(output, 0ULL);
     write_u64(output, (uint64_t)CODE_BEGIN);
     write_u64(output, (uint64_t)code_sz);
     write_u64(output, (uint64_t)DATA_BEGIN);
     write_u64(output, (uint64_t)data_sz);
 
-    // emit code then data
     emit_section(intermediate, output, 0);
     emit_section(intermediate, output, 1);
 
