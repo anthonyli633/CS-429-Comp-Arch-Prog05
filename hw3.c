@@ -336,7 +336,8 @@ static void ld(FILE *intermediate, const char *rd, uint64_t L) {
     fprintf(intermediate, "\taddi %s, %llu\n", rd, (unsigned long long)(L & 0xFULL));
 }
 
-// ===== Pass 1: collect labels and compute addresses in Stage 3 layout =====
+static int pL = 0;
+static char* unparsedLabels[MAX_LABELS];
 void parseInput(FILE *input) {
     char raw[MAX_LINE];
 
@@ -376,8 +377,8 @@ void parseInput(FILE *input) {
             }
             label_name[i] = '\0';
 
-            // if (section == -1) dief("Label outside of .code/.data", raw);
-            add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
+            unparsedLabels[pL++] = my_strdup(label_name);
+            // else add_label_checked(label_name, (section == 1) ? data_pc : code_pc);
             continue;
         }
 
@@ -396,6 +397,14 @@ void parseInput(FILE *input) {
             if (strcmp(mnem, "push") == 0) num_instructions = 2;
             else if (strcmp(mnem, "pop") == 0) num_instructions = 2;
             else if (strcmp(mnem, "ld") == 0) num_instructions = 12;
+
+            if (pL > 0) {
+                for (int i = 0; i < pL; i++) {
+                    add_label_checked(unparsedLabels[i], code_pc);
+                    free(unparsedLabels[i]);
+                }
+                pL = 0;
+            }
 
             code_pc += 4ULL * (uint64_t)num_instructions;
             free(mnem);
@@ -416,8 +425,24 @@ void parseInput(FILE *input) {
                 free(extra);
                 dief("Extra token in data line", raw);
             }
+
+            if (pL > 0) {
+                for (int i = 0; i < pL; i++) {
+                    add_label_checked(unparsedLabels[i], data_pc);
+                    free(unparsedLabels[i]);
+                }
+                pL = 0;
+            }
+
             data_pc += 8ULL;
         }
+    }
+    if (pL > 0) {
+        for (int i = 0; i < pL; i++) {
+            add_label_checked(unparsedLabels[i], section == 0 ? code_pc : data_pc);
+            free(unparsedLabels[i]);
+        }
+        pL = 0;
     }
 }
 
@@ -875,6 +900,11 @@ static void emit_section(FILE *intermediate, FILE *output, int want_section) {
         free(op);
         free(t1); free(t2); free(t3); free(t4); free(t5);
     }
+}
+
+static void clearFile(const char *path) {
+    FILE *f = fopen(path, "w");
+    if (f) fclose(f);
 }
 
 int main(int argc, char *argv[]) {
