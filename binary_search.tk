@@ -1,5 +1,8 @@
+
 .code
 	in r1, r0
+	ld r10, :arr
+	mov r11, r10
 	mov r2, 0
 	ld r20, :read_loop
 	ld r21, :read_done
@@ -13,13 +16,14 @@
 
 :read_body
 	in r4, r0
-	push r4
+	mov (r11)(0), r4
+	addi r11, 8
 	addi r2, 1
 	br r20
 
 :read_done
-	mov r10, r31
 	in r5, r0
+
 	mov r6, 0
 	mov r7, r1
 	subi r7, 1
@@ -27,28 +31,25 @@
 	ld r27, :bs_loop
 	ld r28, :bs_notfound
 	ld r29, :bs_found
-	ld r17, :not_equal
-	ld r18, :val_gt
-
-	mov r12, 8
-	mov r9, 2
 
 :bs_loop
 	brgt r28, r6, r7
 	mov r8, r6
 	add r8, r8, r7
+	mov r9, 2
 	div r8, r8, r9
-	mov r13, r7
-	sub r13, r13, r8
-	mul r13, r13, r12
-	mov r14, r10
+	mov r12, 8
+	mul r13, r8, r12
+	ld r14, :arr
 	add r14, r14, r13
 	mov r15, (r14)(0)
 	xor r16, r15, r5
+	ld r17, :not_equal
 	brnz r17, r16
 	br r29
 
 :not_equal
+	ld r18, :val_gt
 	brgt r18, r15, r5
 	mov r6, r8
 	addi r6, 1
@@ -100,4 +101,5 @@
 	halt
 
 .data
+:arr
 	0
