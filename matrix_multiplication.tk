@@ -1,0 +1,111 @@
+.code
+	in r1, r0
+
+	mul r2, r1, r1
+	mov r6, 8
+	mul r7, r2, r6
+
+	mov r8, r7
+	subi r8, 8
+
+	mov r3, 0
+	ld r11, :readA_loop
+	ld r12, :readA_body
+	ld r13, :readA_done
+:readA_loop
+	xor r4, r3, r2
+	brnz r12, r4
+	br r13
+:readA_body
+	in r5, r0
+	push r5
+	addi r3, 1
+	br r11
+:readA_done
+
+	mov r3, 0
+	ld r11, :readB_loop
+	ld r12, :readB_body
+	ld r13, :readB_done
+:readB_loop
+	xor r4, r3, r2
+	brnz r12, r4
+	br r13
+:readB_body
+	in r5, r0
+	push r5
+	addi r3, 1
+	br r11
+:readB_done
+
+	mov r9, r31
+	mov r10, r31
+	add r10, r10, r7
+
+	mov r30, 1
+
+	ld r16, :done
+	ld r17, :next_i
+	ld r18, :emit_c
+	ld r19, :loop_k
+	ld r14, :loop_i
+	ld r15, :loop_j
+
+	mov r20, 0
+:loop_i
+	mov r21, r1
+	subi r21, 1
+	brgt r16, r20, r21
+
+	mov r22, 0
+:loop_j
+	mov r21, r1
+	subi r21, 1
+	brgt r17, r22, r21
+
+	xor r23, r23, r23
+
+	mov r24, 0
+:loop_k
+	mov r21, r1
+	subi r21, 1
+	brgt r18, r24, r21
+
+	mov r25, r20
+	mul r25, r25, r1
+	add r25, r25, r24
+	mul r27, r25, r6
+	mov r28, r10
+	add r28, r28, r8
+	sub r28, r28, r27
+	mov r27, (r28)(0)
+
+	mov r25, r24
+	mul r25, r25, r1
+	add r25, r25, r22
+	mul r29, r25, r6
+	mov r28, r9
+	add r28, r28, r8
+	sub r28, r28, r29
+	mov r29, (r28)(0)
+
+	mulf r26, r27, r29
+	addf r23, r23, r26
+
+	addi r24, 1
+	br r19
+
+:emit_c
+	out r30, r23
+	addi r22, 1
+	br r15
+
+:next_i
+	addi r20, 1
+	br r14
+
+:done
+	halt
+
+.data
+	0

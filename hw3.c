@@ -99,11 +99,11 @@ static Label labels[MAX_LABELS];
 static int label_count = 0;
 
 typedef struct {
-    uint64_t file_type;       // must be 0
-    uint64_t code_begin;      // usually 0x2000
-    uint64_t code_size;       // bytes
-    uint64_t data_begin;      // usually 0x10000
-    uint64_t data_size;       // bytes
+    uint64_t file_type;
+    uint64_t code_begin;
+    uint64_t code_size;
+    uint64_t data_begin;
+    uint64_t data_size;
 } TkoHeader;
 
 static void dief(const char *msg, const char *line) {
@@ -300,7 +300,7 @@ static uint32_t imm12_unsigned(uint64_t x) {
     return (uint32_t)(x & 0xFFF);
 }
 
-// ===== Macro expansion helpers (emit Stage-2 assembly into intermediate) =====
+
 static void clr(FILE *intermediate, const char *rd) {
     fprintf(intermediate, "\txor %s, %s, %s\n", rd, rd, rd);
 }
@@ -446,7 +446,6 @@ void parseInput(FILE *input) {
     }
 }
 
-// ===== Pass 1b: macro expand into intermediate; also rewrite brr :label to brr <imm> =====
 void generateIntermediate(FILE *input, FILE *intermediate) {
     char raw[MAX_LINE];
     int section = -1;
@@ -585,8 +584,6 @@ void generateIntermediate(FILE *input, FILE *intermediate) {
                 if (!is_valid_label_name(arg + 1)) dief("Invalid label in brr", raw);
                 uint64_t target = get_addr(arg + 1);
                 if (target == (uint64_t)-1) dief("Unknown label in brr", raw);
-
-                // Only allow brr to code labels (PC-relative in instructions)
                 if (target < CODE_BEGIN) dief("brr to non-code label", raw);
 
                 int64_t diff_bytes = (int64_t)target - (int64_t)(code_pc + 4ULL);
@@ -602,7 +599,6 @@ void generateIntermediate(FILE *input, FILE *intermediate) {
             continue;
         }
 
-        // default: re-emit normalized tokens
         fprintf(intermediate, "\t%s", instr);
         free(instr);
 
@@ -619,7 +615,6 @@ void generateIntermediate(FILE *input, FILE *intermediate) {
     }
 }
 
-// ===== Binary writing helpers =====
 static void write_u32(FILE *out, uint32_t w) { fwrite(&w, sizeof(w), 1, out); }
 static void write_u64(FILE *out, uint64_t x) { fwrite(&x, sizeof(x), 1, out); }
 
@@ -657,7 +652,6 @@ static bool parse_reg_num(const char *tok, uint8_t *out) {
     return false;
 }
 
-// ===== Stage 3: count sizes in intermediate (after macro expansion) =====
 static void compute_segment_sizes(FILE *intermediate, uint64_t *code_sz, uint64_t *data_sz) {
     char raw[MAX_LINE];
     int section = -1;
@@ -677,7 +671,7 @@ static void compute_segment_sizes(FILE *intermediate, uint64_t *code_sz, uint64_
         if (strncmp(ptr, ".code", 5) == 0) { section = 0; continue; }
         if (strncmp(ptr, ".data", 5) == 0) { section = 1; continue; }
 
-        // statements must begin with tab in intermediate
+        // statements must begin with tab
         if (raw[0] != '\t') dief("Intermediate invalid: statement missing tab", raw);
         if (section == -1) dief("Intermediate invalid: content outside section", raw);
 
@@ -900,11 +894,6 @@ static void emit_section(FILE *intermediate, FILE *output, int want_section) {
         free(op);
         free(t1); free(t2); free(t3); free(t4); free(t5);
     }
-}
-
-static void clearFile(const char *path) {
-    FILE *f = fopen(path, "w");
-    if (f) fclose(f);
 }
 
 int main(int argc, char *argv[]) {
