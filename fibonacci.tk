@@ -1,3 +1,8 @@
+; r1 (n = int(input()))
+; I'm calculating fib normally
+; n=0 -> 0, n=1-> 1, but then I'll shift it
+; a = 0, b = 1
+; r4 (i = 0)
 .code
 	in r1, r0
 	subi r1, 2
@@ -7,15 +12,18 @@
 	mov r4, 0
 	mov r30, 1
 
-	ld r10, :end
 	ld r11, :loop
 	ld r12, :body
 	ld r13, :output
 
+; if (i > n - 2): print(b)
 :loop
 	brgt r13, r4, r1
 	br r12
 
+; c = a + b, shift
+; a = b, b = c
+; i++
 :body
 	add r5, r2, r3
 	mov r2, r3
@@ -26,7 +34,4 @@
 
 :output
 	out r30, r2
-	br r10
-
-:end
 	halt

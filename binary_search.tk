@@ -1,4 +1,7 @@
-
+; r1 (n = int(input()))
+; r10 = &arr
+; r11 = r10 (moving write pointer)
+; r2 (i = 0)
 .code
 	in r1, r0
 	ld r10, :arr
@@ -8,12 +11,19 @@
 	ld r21, :read_done
 	ld r22, :read_body
 
+; for (int i = 0; i < n; i++) 
+; r3 = n - 1
+; while (true) 
+; if (r2 > r3 (n - 1)) done
+; body
 :read_loop
 	mov r3, r1
 	subi r3, 1
 	brgt r21, r2, r3
 	br r22
 
+; r4 = int(input())
+; mem[r11 + 0] = r4, r11 += 8 bytes, r2++
 :read_body
 	in r4, r0
 	mov (r11)(0), r4
@@ -21,18 +31,40 @@
 	addi r2, 1
 	br r20
 
+; binary search start
+; r5 (x = int(input()))
+; r6 (low = 0)
+; r7 (high = n - 1)
 :read_done
 	in r5, r0
-
 	mov r6, 0
 	mov r7, r1
 	subi r7, 1
 
-	ld r27, :bs_loop
-	ld r28, :bs_notfound
-	ld r29, :bs_found
+	ld r27, :binary_search_loop
+	ld r28, :not_found
+	ld r29, :found
 
-:bs_loop
+; while (low <= high)
+; mid = (low + high) / 2
+; if (arr[mid] == x) found
+; else if (arr[mid] < x) high = mid - 1
+; else low = mid + 1
+; not found
+
+; while (true)
+; if (low > high) not found
+; mid = (low + high) / 2
+; if (arr[mid] == x) found
+; else if (arr[mid] < x) val_lt
+; else val_gt
+; NOTE: arr[mid] = &arr + offset (8 * mid)
+
+; mid: r8 = low, r8 += high, r8 /= 2
+; r13 = r8 * 8
+; r14 = &arr, r14 += r13
+; r15 = (r14)(0) = &arr + 8 * mid
+:binary_search_loop
 	brgt r28, r6, r7
 	mov r8, r6
 	add r8, r8, r7
@@ -48,19 +80,23 @@
 	brnz r17, r16
 	br r29
 
+; can only split once each time
+; so check != then check < or >
+; arr[mid] > x -> greater mid = high - 1
+; else mid = low + 1
 :not_equal
-	ld r18, :val_gt
+	ld r18, :greater
 	brgt r18, r15, r5
 	mov r6, r8
 	addi r6, 1
 	br r27
 
-:val_gt
+:greater
 	mov r7, r8
 	subi r7, 1
 	br r27
 
-:bs_found
+:found
 	mov r30, 3
 	mov r19, 102
 	out r30, r19
@@ -76,7 +112,7 @@
 	out r30, r19
 	halt
 
-:bs_notfound
+:not_found
 	mov r30, 3
 	mov r19, 110
 	out r30, r19

@@ -1,43 +1,60 @@
+; r1 (n = int(input()))
+; r2 (size = n * n)
+; last element = &arr + 8 * (size) - 1
+; r7 = 8 * size
+; r8 = offset (8 * (size - 1))
+; r3 = 0 (i = 0 ... size - 1)
 .code
 	in r1, r0
-
 	mul r2, r1, r1
 	mov r6, 8
 	mul r7, r2, r6
-
 	mov r8, r7
 	subi r8, 8
-
 	mov r3, 0
 	ld r11, :readA_loop
 	ld r12, :readA_body
 	ld r13, :readA_done
+; We are calculating A x B, so first read in both A and B
+; while (true)
+; if (r3 i > size - 1) -> done
+; body
 :readA_loop
-	xor r4, r3, r2
-	brnz r12, r4
-	br r13
+	mov r4, r2
+	subi r4, 1
+	brgt r13, r3, r4
+	br r12
+; read in A[i / n][i % n], i++, push to stack
 :readA_body
 	in r5, r0
 	push r5
 	addi r3, 1
 	br r11
+; i = 0, reset -> read B
 :readA_done
-
 	mov r3, 0
 	ld r11, :readB_loop
 	ld r12, :readB_body
 	ld r13, :readB_done
+; same thing
 :readB_loop
-	xor r4, r3, r2
-	brnz r12, r4
-	br r13
+	mov r4, r2
+	subi r4, 1
+	brgt r13, r3, r4
+	br r12
 :readB_body
 	in r5, r0
 	push r5
 	addi r3, 1
 	br r11
-:readB_done
 
+; because it is a stack, we have to access r31
+; r31 = front of B, r31 + 8 * size (r7) = front of A
+; Let r10 = r31 + 8 * size
+; B = [r31, r31 + 8, ... , r31 + r8]
+; A = [r10, r10 + 8, ... , r10 + r8]
+; r20 (i = 0)
+:readB_done
 	mov r9, r31
 	mov r10, r31
 	add r10, r10, r7
@@ -52,20 +69,31 @@
 	ld r15, :loop_j
 
 	mov r20, 0
+
+; A[i][j] = sum(A[i][k] * B[k][j])
+; i > n - 1 -> done
+; else -> j = 0, loop_j
 :loop_i
 	mov r21, r1
 	subi r21, 1
 	brgt r16, r20, r21
-
 	mov r22, 0
+; j > n - 1 -> i++, loop_i
+; r23 (sum = 0)
+; r24 (k = 0)
 :loop_j
 	mov r21, r1
 	subi r21, 1
 	brgt r17, r22, r21
-
-	xor r23, r23, r23
-
+	clr r23
 	mov r24, 0
+; k > n - 1 -> j++, print sum
+; load A[i][k], B[k][j]
+; NOTE: because of stack, order reversed
+; computes 1D index (idx = (i * n + k) * 8)
+; r28 = &A + r8 (8 * (size - 1)) = location of 0th element
+; r28 - idx = correct location of A[i][k]
+; sum += A[i][k] * B[k][j], k++
 :loop_k
 	mov r21, r1
 	subi r21, 1
@@ -106,6 +134,3 @@
 
 :done
 	halt
-
-.data
-	0
